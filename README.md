@@ -38,3 +38,12 @@ curl -N -X POST 'http://localhost:8080/api/agent/chat/stream' \
 ```
 
 说明：`conversationId` 仍用于会话隔离，不同 `conversationId` 会映射到不同 threadId。
+
+## Studio 可视化调试
+
+已集成 Spring AI Alibaba Studio embedded mode，启动后可直接访问内置 UI 进行 Agent 调试。
+
+- 访问地址：http://localhost:8080/chatui/index.html
+- appName：推荐使用 `research_agent`（Spring AI Alibaba Studio 默认值），同时兼容 `report-agent`。
+- 如果 UI 默认发送 `research_agent`，现在无需额外配置即可直接调试。
+- Studio 提供的后端接口（`/list-apps`、`/run_sse` 等）由 Studio 自动注册，原 `/api/agent/*` 接口仍保留。

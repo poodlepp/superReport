@@ -100,6 +100,10 @@ public class ReportAgent {
         return chat(userMessage, "default");
     }
 
+    public ReactAgent getReactAgent() {
+        return reactAgent;
+    }
+
     public void clearMemory(String conversationId) {
         conversationThreadIds.put(conversationId, conversationId + "_" + System.currentTimeMillis());
     }
