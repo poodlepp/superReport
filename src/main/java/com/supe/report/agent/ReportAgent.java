@@ -5,12 +5,16 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.interceptor.todolist.TodoListInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolretry.ToolRetryInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.supe.report.tools.ReportTool;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
@@ -49,6 +53,29 @@ public class ReportAgent {
                 )
                 .saver(MemorySaver.builder().build())
                 .build();
+    }
+
+    public Flux<String> streamChat(String userMessage, String conversationId) {
+        String threadId = resolveThreadId(conversationId);
+        RunnableConfig config = RunnableConfig.builder()
+                .threadId(threadId)
+                .build();
+
+        try {
+            Flux<NodeOutput> outputFlux = reactAgent.stream(userMessage, config);
+            return outputFlux.handle((output, sink) -> {
+                if (output instanceof StreamingOutput streamingOutput
+                        && streamingOutput.getOutputType() == OutputType.AGENT_MODEL_STREAMING) {
+                    Message message = streamingOutput.message();
+                    String text = (message != null) ? message.getText() : null;
+                    if (text != null && !text.isBlank()) {
+                        sink.next(text);
+                    }
+                }
+            });
+        } catch (GraphRunnerException e) {
+            return Flux.error(new RuntimeException("Agent stream failed: " + e.getMessage(), e));
+        }
     }
 
     public String chat(String userMessage, String conversationId) {
